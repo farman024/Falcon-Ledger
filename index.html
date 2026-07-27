@@ -834,12 +834,28 @@
   function previewPhoto(e) {
     const preview = document.getElementById('profilePreview');
     if (e && e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
       const reader = new FileReader();
       reader.onload = function(ev) {
-        preview.innerHTML = `<img src="${ev.target.result}" alt="">`;
-        preview._tempPhoto = ev.target.result;
+        const img = new Image();
+        img.onload = function() {
+          const maxSize = 200;
+          let w = img.width, h = img.height;
+          if (w > maxSize || h > maxSize) {
+            const ratio = Math.min(maxSize / w, maxSize / h);
+            w = Math.round(w * ratio); h = Math.round(h * ratio);
+          }
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          const ctx = c.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressed = c.toDataURL('image/jpeg', 0.7);
+          preview.innerHTML = `<img src="${compressed}" alt="">`;
+          preview._tempPhoto = compressed;
+        };
+        img.src = ev.target.result;
       };
-      reader.readAsDataURL(e.target.files[0]);
+      reader.readAsDataURL(file);
     } else {
       preview.innerHTML = profile.photo ? `<img src="${profile.photo}" alt="">` : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
       delete preview._tempPhoto;
@@ -852,7 +868,7 @@
     profile.name = name;
     if (preview._tempPhoto) profile.photo = preview._tempPhoto;
     else if (!profile.photo) delete profile.photo;
-    localStorage.setItem('falcon_profile', JSON.stringify(profile));
+    try { localStorage.setItem('falcon_profile', JSON.stringify(profile)); } catch (e) { toast('Photo too large. Try a smaller image.'); return; }
     renderProfile();
     closeModal('profileModal');
     toast('Profile saved!');
