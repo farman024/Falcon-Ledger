@@ -202,6 +202,12 @@
   .btn-confirm-delete:hover { background: var(--red-dim); box-shadow: 0 0 16px rgba(255,71,87,0.2); }
 
   /* Toast */
+  .photo-viewer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+  .photo-viewer-overlay.open { opacity: 1; pointer-events: auto; }
+  .photo-viewer-content { position: relative; max-width: 90vw; max-height: 90vh; }
+  .photo-viewer-content img { max-width: 100%; max-height: 90vh; border-radius: 4px; border: 1px solid var(--border); }
+  .photo-viewer-close { position: absolute; top: -36px; right: 0; background: none; border: none; color: var(--text-dim); font-size: 28px; cursor: pointer; line-height: 1; padding: 4px; }
+  .photo-viewer-close:hover { color: var(--text-bright); }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--card); border: 1px solid var(--border); color: var(--text-bright); padding: 10px 16px; font-size: 11px; z-index: 999; transition: transform 0.3s; white-space: nowrap; }
   .toast.show { transform: translateX(-50%) translateY(0); }
   .toast.success { border-color: var(--green); color: var(--green); }
@@ -284,9 +290,9 @@
   </div>
 
   <!-- Profile -->
-  <div class="profile-bar" onclick="openProfileModal()">
-    <div class="profile-avatar" id="profileAvatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-    <span class="profile-name" id="profileName">Add Profile</span>
+  <div class="profile-bar">
+    <div class="profile-avatar" id="profileAvatar" onclick="viewPhoto()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+    <span class="profile-name" id="profileName" onclick="openProfileModal()">Add Profile</span>
   </div>
 
   <!-- Ticker bar -->
@@ -515,6 +521,13 @@
     <div class="form-group"><label class="form-label">Name</label><input id="profileNameInput" placeholder="Your name" maxlength="30"></div>
     <div class="form-group"><label class="form-label">Photo</label><div class="profile-photo-row"><div class="profile-avatar preview" id="profilePreview"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><button class="csv-btn" onclick="document.getElementById('photoInput').click()">Choose Image</button><button class="csv-btn" onclick="removePhoto()">Remove</button></div><input type="file" id="photoInput" accept="image/*" style="display:none" onchange="previewPhoto(event)"></div>
     <button class="save-btn" onclick="saveProfile()">SAVE PROFILE</button>
+  </div>
+</div>
+
+<div class="photo-viewer-overlay" id="photoViewer" onclick="closePhotoViewer()">
+  <div class="photo-viewer-content" onclick="event.stopPropagation()">
+    <button class="photo-viewer-close" onclick="closePhotoViewer()">&times;</button>
+    <img id="photoViewerImg" src="" alt="">
   </div>
 </div>
 
@@ -880,6 +893,13 @@
     preview.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
     delete preview._tempPhoto;
   }
+
+  function viewPhoto() {
+    if (!profile.photo) { openProfileModal(); return; }
+    document.getElementById('photoViewerImg').src = profile.photo;
+    document.getElementById('photoViewer').classList.add('open');
+  }
+  function closePhotoViewer() { document.getElementById('photoViewer').classList.remove('open'); }
 
   function buildChart() {
     if (chartMode === 'pie') return buildPieChart();
