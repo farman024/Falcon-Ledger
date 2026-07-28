@@ -848,11 +848,12 @@
     const preview = document.getElementById('profilePreview');
     if (e && e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) { toast('Image too large — max 5MB'); return; }
       const reader = new FileReader();
       reader.onload = function(ev) {
         const img = new Image();
         img.onload = function() {
-          const maxSize = 400;
+          const maxSize = 800;
           let w = img.width, h = img.height;
           if (w > maxSize || h > maxSize) {
             const ratio = Math.min(maxSize / w, maxSize / h);
@@ -862,7 +863,7 @@
           c.width = w; c.height = h;
           const ctx = c.getContext('2d');
           ctx.drawImage(img, 0, 0, w, h);
-          const compressed = c.toDataURL('image/jpeg', 0.85);
+          const compressed = c.toDataURL('image/jpeg', 0.95);
           preview.innerHTML = `<img src="${compressed}" alt="">`;
           preview._tempPhoto = compressed;
         };
