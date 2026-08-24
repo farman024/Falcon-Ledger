@@ -346,7 +346,7 @@
         <input id="title" placeholder="e.g. Netflix" autocomplete="off">
       </div>
       <div class="form-group">
-        <label class="form-label">Amount (₹)</label>
+        <label class="form-label" id="amountLabel">Amount (₹)</label>
         <input id="amount" type="number" placeholder="0.00" min="0">
       </div>
       <div class="form-group">
@@ -450,7 +450,7 @@
         <input id="e-title" placeholder="Title" autocomplete="off" onkeydown="if(event.key==='Enter')saveEdit()">
       </div>
       <div class="form-group">
-        <label class="form-label">Amount (₹)</label>
+        <label class="form-label" id="e-amountLabel">Amount (₹)</label>
         <input id="e-amount" type="number" placeholder="0.00" min="0" onkeydown="if(event.key==='Enter')saveEdit()">
       </div>
       <div class="form-group">
@@ -524,6 +524,23 @@
       </div>
     </div>
     <div class="settings-section">
+      <div class="settings-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.9 8a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z"/><path d="M12 11v3"/><path d="M9 14h6"/></svg> Currency</div>
+      <select id="currencySelect" onchange="setCurrency(this.value)" style="width:100%">
+        <option value="INR">INR — Indian Rupee (₹)</option>
+        <option value="USD">USD — US Dollar ($)</option>
+        <option value="EUR">EUR — Euro (€)</option>
+        <option value="GBP">GBP — British Pound (£)</option>
+        <option value="AED">AED — UAE Dirham (AED)</option>
+        <option value="SAR">SAR — Saudi Riyal (SAR)</option>
+        <option value="JPY">JPY — Japanese Yen (¥)</option>
+        <option value="CAD">CAD — Canadian Dollar (C$)</option>
+        <option value="AUD">AUD — Australian Dollar (A$)</option>
+        <option value="CHF">CHF — Swiss Franc (CHF)</option>
+        <option value="SGD">SGD — Singapore Dollar (S$)</option>
+        <option value="CNY">CNY — Chinese Yuan (¥)</option>
+      </select>
+    </div>
+    <div class="settings-section">
       <div class="settings-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Data — Import / Export</div>
       <div class="settings-grid">
         <button class="settings-btn" onclick="exportJSON();closeModal('settingsModal')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> JSON</button>
@@ -580,6 +597,42 @@
   let chartMode = 'bar';
   let lastSaved = (() => { try { return localStorage.getItem('falcon_saved_at') || ''; } catch { return ''; } })();
 
+  // ── Currency ──
+  const CURRENCIES = {
+    INR:{symbol:'₹',name:'INR — Indian Rupee'},
+    USD:{symbol:'$',name:'USD — US Dollar'},
+    EUR:{symbol:'€',name:'EUR — Euro'},
+    GBP:{symbol:'£',name:'GBP — British Pound'},
+    AED:{symbol:'AED ',name:'AED — UAE Dirham'},
+    SAR:{symbol:'SAR ',name:'SAR — Saudi Riyal'},
+    JPY:{symbol:'¥',name:'JPY — Japanese Yen'},
+    CAD:{symbol:'C$',name:'CAD — Canadian Dollar'},
+    AUD:{symbol:'A$',name:'AUD — Australian Dollar'},
+    CHF:{symbol:'CHF ',name:'CHF — Swiss Franc'},
+    SGD:{symbol:'S$',name:'SGD — Singapore Dollar'},
+    CNY:{symbol:'¥',name:'CNY — Chinese Yuan'}
+  };
+  let currency = (()=>{ try{ const c=localStorage.getItem('falcon_currency'); return c && CURRENCIES[c] ? c : 'INR'; }catch{return 'INR';}})();
+  function curSym(){ return (CURRENCIES[currency]||CURRENCIES.INR).symbol; }
+  function setCurrency(code){
+    if(!CURRENCIES[code]) return;
+    currency=code;
+    try{ localStorage.setItem('falcon_currency', code);}catch{}
+    sfx('toggle');
+    updateCurrencyUI();
+    render();
+    toast('Currency: ' + CURRENCIES[code].name);
+  }
+  function updateCurrencyUI(){
+    const s=curSym();
+    const trim=s.trim();
+    const a=document.getElementById('amountLabel'); if(a) a.textContent='Amount ('+trim+')';
+    const b=document.getElementById('e-amountLabel'); if(b) b.textContent='Amount ('+trim+')';
+    const f1=document.getElementById('filterMin'); if(f1) f1.placeholder='Min '+trim;
+    const f2=document.getElementById('filterMax'); if(f2) f2.placeholder='Max '+trim;
+    const sel=document.getElementById('currencySelect'); if(sel) sel.value=currency;
+  }
+
   // ── Sound engine (Web Audio, like Global War Room) ──
   let _audioCtx = null;
   function soundOn() { return localStorage.getItem('falcon_sound') !== 'off'; }
@@ -629,7 +682,7 @@
       return `<div class="budget-row"><span class="budget-label">${c}</span><input class="budget-input" id="b-${c}" type="number" min="0" placeholder="0" value="${limit}" onfocus="this.select()"><span class="budget-status${over ? ' over' : ''}">${over ? '⚠ +' + fmt(spent[c]-limit) : spent[c] ? fmt(spent[c]) : '—'}</span></div>`;
     }).join('');
   }
-  function openSettingsModal(){ sfx('open'); const sw=document.getElementById('soundSwitch'); if(sw) sw.classList.toggle('on', soundOn()); renderBudgetList(); document.getElementById('settingsModal').classList.add('open'); }
+  function openSettingsModal(){ sfx('open'); const sw=document.getElementById('soundSwitch'); if(sw) sw.classList.toggle('on', soundOn()); const cs=document.getElementById('currencySelect'); if(cs) cs.value=currency; renderBudgetList(); document.getElementById('settingsModal').classList.add('open'); }
   function toggleSound(){ const now = soundOn() ? 'off' : 'on'; localStorage.setItem('falcon_sound', now==='on' ? 'on' : 'off'); document.getElementById('soundSwitch').classList.toggle('on', now==='on'); sfx('toggle'); if(now==='on') setTimeout(()=>sfx('success'),120); }
 
   const catIcons = {
@@ -689,12 +742,13 @@
   }
 
   function fmt(n) {
-    if (typeof n !== 'number' || isNaN(n)) return '₹0';
+    const s = curSym();
+    if (typeof n !== 'number' || isNaN(n)) return s.trim() + '0';
     const abs = Math.abs(n);
     const sign = n < 0 ? '-' : '';
-    if (abs >= 100000) return sign + '₹' + (abs/100000).toFixed(1) + 'L';
-    if (abs >= 1000) return sign + '₹' + (abs/1000).toFixed(1) + 'k';
-    return sign + '₹' + abs.toFixed(0);
+    if (abs >= 100000) return sign + s + (abs/100000).toFixed(1) + 'L';
+    if (abs >= 1000) return sign + s + (abs/1000).toFixed(1) + 'k';
+    return sign + s + abs.toFixed(0);
   }
 
   function addTransaction() {
@@ -806,8 +860,7 @@
 
   function exportCSV() {
     if (!data.length) return toast('No data to export!', 'error');
-    sfx('export');
-    const rows = [['Date','Title','Category','Type','Amount (INR)','Note','Recurring','Frequency']];
+    const rows = [['Date','Title','Category','Type','Amount ('+currency+')','Note','Recurring','Frequency']];
     [...data].sort((a,b) => a.date.localeCompare(b.date)).forEach(t => {
       rows.push([t.date, `"${t.title.replace(/"/g,'""')}"`, t.category, t.type, t.amount, `"${(t.note||'').replace(/"/g,'""')}"`, t.recurring ? 'Yes' : 'No', t.recurringFreq || '']);
     });
@@ -869,7 +922,7 @@
         responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { position: 'right', labels: { color: labelColor, font: { family: 'Space Mono', size: 10 }, boxWidth: 12, boxHeight: 12, padding: 12 } },
-          tooltip: { backgroundColor: '#000c18', borderColor: '#003060', borderWidth: 1, titleColor: '#b0d0e0', bodyColor: '#4a7080', titleFont: { family: 'Space Mono', size: 11 }, bodyFont: { family: 'Space Mono', size: 11 }, callbacks: { label: c => ` ${c.label}: ₹${c.parsed.toLocaleString('en-IN')}` } }
+          tooltip: { backgroundColor: '#000c18', borderColor: '#003060', borderWidth: 1, titleColor: '#b0d0e0', bodyColor: '#4a7080', titleFont: { family: 'Space Mono', size: 11 }, bodyFont: { family: 'Space Mono', size: 11 }, callbacks: { label: c => ` ${c.label}: ${curSym()}${c.parsed.toLocaleString('en-IN')}` } }
         }
       }
     });
@@ -1036,11 +1089,11 @@
         responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { labels: { color: labelColor, font: { family: 'Space Mono', size: 10 }, boxWidth: 12, boxHeight: 12, padding: 16 } },
-          tooltip: { backgroundColor: '#000c18', borderColor: '#003060', borderWidth: 1, titleColor: '#b0d0e0', bodyColor: '#4a7080', titleFont: { family: 'Space Mono', size: 11 }, bodyFont: { family: 'Space Mono', size: 11 }, callbacks: { label: c => ` IN₹${c.parsed.y.toLocaleString('en-IN')}` } }
+          tooltip: { backgroundColor: '#000c18', borderColor: '#003060', borderWidth: 1, titleColor: '#b0d0e0', bodyColor: '#4a7080', titleFont: { family: 'Space Mono', size: 11 }, bodyFont: { family: 'Space Mono', size: 11 }, callbacks: { label: c => ` ${curSym().trim()}${c.parsed.y.toLocaleString('en-IN')}` } }
         },
         scales: {
           x: { ticks: { color: labelColor, font: { family: 'Space Mono', size: 10 } }, grid: { color: gridColor }, border: { color: gridColor } },
-          y: { ticks: { color: labelColor, font: { family: 'Space Mono', size: 10 }, callback: v => v >= 1000 ? '₹'+(v/1000).toFixed(0)+'k' : '₹'+v }, grid: { color: gridColor }, border: { color: gridColor } }
+          y: { ticks: { color: labelColor, font: { family: 'Space Mono', size: 10 }, callback: v => { const s=curSym().trim(); return v >= 1000 ? s+(v/1000).toFixed(0)+'k' : s+v; } }, grid: { color: gridColor }, border: { color: gridColor } }
         }
       }
     });
@@ -1270,7 +1323,7 @@
           const cols = parseCSVLine(lines[i]);
           const date = (cols[dateIdx] || '').trim();
           const title = (cols[titleIdx] || '').trim();
-          const amount = parseFloat((cols[amtIdx] || '').replace(/[₹,]/g,''));
+          const amount = parseFloat((cols[amtIdx] || '').replace(/[^0-9.\-]/g,''));
           if (!title || isNaN(amount) || amount <= 0 || !date) continue;
           const category = catIdx >= 0 ? (cols[catIdx] || '').trim() : 'Other';
           const type = typeIdx >= 0 ? ((cols[typeIdx] || '').toLowerCase().includes('inc') ? 'income' : 'expense') : 'expense';
@@ -1305,17 +1358,18 @@
     let totalIncome = 0, totalExpense = 0;
     data.forEach(t => { if (t.type==='income') totalIncome+=t.amount; else totalExpense+=t.amount; });
     const sorted = [...data].sort((a,b) => a.date.localeCompare(b.date));
+    const s = curSym();
     const rows = sorted.map(t =>
-      `<tr><td>${t.date}</td><td>${t.title}</td><td>${t.category}</td><td class="${t.type}">${t.type.toUpperCase()}</td><td class="right ${t.type}">₹${t.amount.toLocaleString('en-IN')}</td>${t.note ? `<td>${t.note}</td>` : '<td>—</td>'}</tr>`
+      `<tr><td>${t.date}</td><td>${t.title}</td><td>${t.category}</td><td class="${t.type}">${t.type.toUpperCase()}</td><td class="right ${t.type}">${s}${t.amount.toLocaleString('en-IN')}</td>${t.note ? `<td>${t.note}</td>` : '<td>—</td>'}</tr>`
     ).join('');
     const balance = totalIncome - totalExpense;
     const w = window.open('', '_blank');
     w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Falcon Ledger Report</title><style>body{font-family:'Space Mono',monospace;padding:24px;color:#000}h1{font-size:18px;margin-bottom:4px}.name{font-size:11px;color:#333;margin-bottom:2px}.sub{font-size:10px;color:#666;margin-bottom:16px}.summary{font-size:11px;margin-bottom:16px}.summary b{margin-right:20px}.green{color:#00a050}.red{color:#d03030}table{width:100%;border-collapse:collapse;font-size:10px}th{background:#f0f0f0;padding:6px 8px;text-align:left;border:1px solid #ccc;font-size:9px;text-transform:uppercase;letter-spacing:1px}td{padding:5px 8px;border:1px solid #ddd}.right{text-align:right}</style></head><body>
       <h1>FALCON LEDGER</h1>
       ${profile.name ? `<div class="name">${profile.name}</div>` : ''}
-      <div class="sub">Generated ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} &middot; ${data.length} transactions</div>
-      <div class="summary"><b>Balance: <span class="${balance >= 0 ? 'green' : 'red'}">₹${balance.toLocaleString('en-IN')}</span></b><b>Income: <span class="green">₹${totalIncome.toLocaleString('en-IN')}</span></b><b>Expense: <span class="red">₹${totalExpense.toLocaleString('en-IN')}</span></b></div>
-      <table><thead><tr><th>Date</th><th>Title</th><th>Category</th><th>Type</th><th class="right">Amount</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="sub">Generated ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} &middot; ${data.length} transactions &middot; ${currency}</div>
+      <div class="summary"><b>Balance: <span class="${balance >= 0 ? 'green' : 'red'}">${s}${balance.toLocaleString('en-IN')}</span></b><b>Income: <span class="green">${s}${totalIncome.toLocaleString('en-IN')}</span></b><b>Expense: <span class="red">${s}${totalExpense.toLocaleString('en-IN')}</span></b></div>
+      <table><thead><tr><th>Date</th><th>Title</th><th>Category</th><th>Type</th><th class="right">Amount (${currency})</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table>
     </body></html>`);
     w.document.close();
     w.focus();
@@ -1329,7 +1383,6 @@
       if (document.getElementById('settingsModal').classList.contains('open')) closeModal('settingsModal');
       if (document.getElementById('editModal').classList.contains('open')) closeModal('editModal');
       if (document.getElementById('deleteModal').classList.contains('open')) closeModal('deleteModal');
-      if (document.getElementById('budgetModal').classList.contains('open')) closeModal('budgetModal');
       if (document.getElementById('profileModal').classList.contains('open')) closeModal('profileModal');
     }
     if (e.key === 'n' || e.key === 'N') document.getElementById('title').focus();
@@ -1338,6 +1391,7 @@
   });
 
   renderProfile();
+  updateCurrencyUI();
   if (lastSaved) document.getElementById('saveIndicator').textContent = 'Last saved at ' + lastSaved;
   processRecurring();
   render();
