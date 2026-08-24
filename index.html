@@ -539,6 +539,7 @@
         <option value="SGD">SGD — Singapore Dollar (S$)</option>
         <option value="CNY">CNY — Chinese Yuan (¥)</option>
       </select>
+      <div id="rateInfo" style="font-size:9px;color:var(--text-dim);margin-top:6px;letter-spacing:0.5px">Fetching rates…</div>
     </div>
     <div class="settings-section">
       <div class="settings-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Data — Import / Export</div>
@@ -597,7 +598,7 @@
   let chartMode = 'bar';
   let lastSaved = (() => { try { return localStorage.getItem('falcon_saved_at') || ''; } catch { return ''; } })();
 
-  // ── Currency ──
+  // ── Currency + Conversion ──
   const CURRENCIES = {
     INR:{symbol:'₹',name:'INR — Indian Rupee'},
     USD:{symbol:'$',name:'USD — US Dollar'},
@@ -613,7 +614,47 @@
     CNY:{symbol:'¥',name:'CNY — Chinese Yuan'}
   };
   let currency = (()=>{ try{ const c=localStorage.getItem('falcon_currency'); return c && CURRENCIES[c] ? c : 'INR'; }catch{return 'INR';}})();
+  let budgetsCurrency = (()=>{ try{ const c=localStorage.getItem('falcon_budgets_currency'); return c && CURRENCIES[c] ? c : currency; }catch{return currency;}})();
+  // rates vs INR (fallback approximate, updated live)
+  const FALLBACK_RATES = {INR:1, USD:0.01205, EUR:0.01032, GBP:0.00895, AED:0.04425, SAR:0.04518, JPY:1.79, CAD:0.0163, AUD:0.0183, CHF:0.01075, SGD:0.01542, CNY:0.0862};
+  let RATES = (()=>{ try{ const r=JSON.parse(localStorage.getItem('falcon_rates')); return r && typeof r==='object' ? r : {...FALLBACK_RATES}; }catch{return {...FALLBACK_RATES};}})();
+  let ratesFetched = false;
   function curSym(){ return (CURRENCIES[currency]||CURRENCIES.INR).symbol; }
+  function getRate(code){ return RATES[code] || RATES[currency] || 1; }
+  function convertAmount(amt, from, to){
+    if(!amt || from===to) return amt;
+    const rf = RATES[from] || FALLBACK_RATES[from] || 1;
+    const rt = RATES[to]   || FALLBACK_RATES[to]   || 1;
+    if(!rf || !rt) return amt;
+    return amt * (rt / rf);
+  }
+  function txDisplayAmount(t){
+    const from = t.currency || 'INR';
+    return convertAmount(t.amount, from, currency);
+  }
+  function budgetDisplayLimit(val){
+    return convertAmount(val, budgetsCurrency, currency);
+  }
+  async function fetchRates(){
+    try{
+      const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/inr.json', {cache:'no-store'});
+      if(!r.ok) throw 'bad status';
+      const j = await r.json();
+      const inr = j.inr || j.INR || j['inr'];
+      if(!inr) throw 'no inr';
+      const nr={INR:1};
+      Object.keys(CURRENCIES).forEach(c=>{ const k=c.toLowerCase(); if(inr[k] && typeof inr[k]==='number') nr[c]=inr[k]; else if(FALLBACK_RATES[c]) nr[c]=FALLBACK_RATES[c]; });
+      // keep fallback for missing
+      Object.keys(FALLBACK_RATES).forEach(c=>{ if(!nr[c]) nr[c]=FALLBACK_RATES[c]; });
+      RATES=nr;
+      try{ localStorage.setItem('falcon_rates', JSON.stringify(RATES)); localStorage.setItem('falcon_rates_ts', Date.now().toString()); }catch{}
+      ratesFetched=true;
+      const el=document.getElementById('rateInfo'); if(el) el.textContent='Rates live • '+new Date().toLocaleTimeString();
+      render();
+    }catch(e){
+      const el=document.getElementById('rateInfo'); if(el) el.textContent='Rates offline • using cached';
+    }
+  }
   function setCurrency(code){
     if(!CURRENCIES[code]) return;
     currency=code;
@@ -621,7 +662,8 @@
     sfx('toggle');
     updateCurrencyUI();
     render();
-    toast('Currency: ' + CURRENCIES[code].name);
+    toast('Currency: ' + CURRENCIES[code].name + (ratesFetched?' • converted':''));
+    if(!ratesFetched) fetchRates();
   }
   function updateCurrencyUI(){
     const s=curSym();
@@ -631,6 +673,7 @@
     const f1=document.getElementById('filterMin'); if(f1) f1.placeholder='Min '+trim;
     const f2=document.getElementById('filterMax'); if(f2) f2.placeholder='Max '+trim;
     const sel=document.getElementById('currencySelect'); if(sel) sel.value=currency;
+    const el=document.getElementById('rateInfo'); if(el && !ratesFetched) { try{ const ts=localStorage.getItem('falcon_rates_ts'); el.textContent = ts ? 'Rates cached • '+new Date(parseInt(ts)).toLocaleDateString() : 'Rates: tap to refresh'; }catch{ el.textContent=''; } }
   }
 
   // ── Sound engine (Web Audio, like Global War Room) ──
@@ -673,13 +716,15 @@
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
     const spent = {}; cats.forEach(c => spent[c] = 0);
-    data.filter(t => t.date.startsWith(monthKey) && t.type === 'expense').forEach(t => spent[t.category] += t.amount);
+    data.filter(t => t.date.startsWith(monthKey) && t.type === 'expense').forEach(t => spent[t.category] += txDisplayAmount(t));
     const el = document.getElementById('budgetList');
     if (!el) return;
     el.innerHTML = cats.map(c => {
-      const limit = budgets[c] || '';
-      const over = limit && spent[c] > limit;
-      return `<div class="budget-row"><span class="budget-label">${c}</span><input class="budget-input" id="b-${c}" type="number" min="0" placeholder="0" value="${limit}" onfocus="this.select()"><span class="budget-status${over ? ' over' : ''}">${over ? '⚠ +' + fmt(spent[c]-limit) : spent[c] ? fmt(spent[c]) : '—'}</span></div>`;
+      const rawLimit = budgets[c] || '';
+      const limit = rawLimit ? Math.round(budgetDisplayLimit(rawLimit)*100)/100 : '';
+      const spentVal = spent[c] || 0;
+      const over = limit && spentVal > limit;
+      return `<div class="budget-row"><span class="budget-label">${c}</span><input class="budget-input" id="b-${c}" type="number" min="0" placeholder="0" value="${limit}" onfocus="this.select()"><span class="budget-status${over ? ' over' : ''}">${over ? '⚠ +' + fmt(spentVal-limit) : spentVal ? fmt(spentVal) : '—'}</span></div>`;
     }).join('');
   }
   function openSettingsModal(){ sfx('open'); const sw=document.getElementById('soundSwitch'); if(sw) sw.classList.toggle('on', soundOn()); const cs=document.getElementById('currencySelect'); if(cs) cs.value=currency; renderBudgetList(); document.getElementById('settingsModal').classList.add('open'); }
@@ -761,7 +806,7 @@
     if (!amount || amount <= 0) return toast('Enter a valid amount!', 'error');
     if (!date) return toast('Select a date!', 'error');
     recurringFreq = document.getElementById('recurringFreq').value;
-    data.unshift({ id: Date.now(), title, amount, date, category, type: selectedType, note, recurring: isRecurring, recurringFreq: isRecurring ? recurringFreq : undefined });
+    data.unshift({ id: Date.now(), title, amount, date, category, type: selectedType, note, recurring: isRecurring, recurringFreq: isRecurring ? recurringFreq : undefined, currency });
     save(); render();
     document.getElementById('title').value = '';
     document.getElementById('amount').value = '';
@@ -795,7 +840,7 @@
     sfx('success');
     const t = data.find(x => x.id === id);
     if (!t) return;
-    data.unshift({ ...t, id: Date.now(), date: new Date().toISOString().slice(0,10), note: t.note ? t.note + ' (copy)' : 'copy', recurring: false, recurringFreq: undefined });
+    data.unshift({ ...t, id: Date.now(), date: new Date().toISOString().slice(0,10), note: t.note ? t.note + ' (copy)' : 'copy', recurring: false, recurringFreq: undefined, currency });
     save(); render();
     toast('Transaction copied!');
   }
@@ -806,7 +851,7 @@
     if (!t) return;
     editingId = id;
     document.getElementById('e-title').value = t.title;
-    document.getElementById('e-amount').value = t.amount;
+    document.getElementById('e-amount').value = Math.round(txDisplayAmount(t)*100)/100;
     document.getElementById('e-date').value = t.date;
     document.getElementById('e-category').value = t.category;
     document.getElementById('e-note').value = t.note || '';
@@ -831,7 +876,7 @@
     const idx = data.findIndex(x => x.id === editingId);
     if (idx === -1) return;
     editRecurringFreq = document.getElementById('e-recurringFreq').value;
-    data[idx] = { ...data[idx], title, amount, date, category, type: editType, note, recurring: editRecurring, recurringFreq: editRecurring ? editRecurringFreq : undefined };
+    data[idx] = { ...data[idx], title, amount, date, category, type: editType, note, recurring: editRecurring, recurringFreq: editRecurring ? editRecurringFreq : undefined, currency };
     save(); render(); closeModal('editModal');
     sfx('success');
     toast('Changes saved', 'warn');
@@ -858,11 +903,12 @@
     render();
   }
 
-  function exportCSV() {
+   function exportCSV() {
     if (!data.length) return toast('No data to export!', 'error');
-    const rows = [['Date','Title','Category','Type','Amount ('+currency+')','Note','Recurring','Frequency']];
+    const rows = [['Date','Title','Category','Type','Amount ('+currency+')','Currency','Note','Recurring','Frequency']];
     [...data].sort((a,b) => a.date.localeCompare(b.date)).forEach(t => {
-      rows.push([t.date, `"${t.title.replace(/"/g,'""')}"`, t.category, t.type, t.amount, `"${(t.note||'').replace(/"/g,'""')}"`, t.recurring ? 'Yes' : 'No', t.recurringFreq || '']);
+      const v=Math.round(txDisplayAmount(t)*100)/100;
+      rows.push([t.date, `"${t.title.replace(/"/g,'""')}"`, t.category, t.type, v, currency, `"${(t.note||'').replace(/"/g,'""')}"`, t.recurring ? 'Yes' : 'No', t.recurringFreq || '']);
     });
     const csv = rows.map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -891,7 +937,7 @@
     cats.forEach(c => catData[c] = 0);
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    data.filter(t => t.date.startsWith(monthKey) && t.type === 'expense').forEach(t => catData[t.category] += t.amount);
+    data.filter(t => t.date.startsWith(monthKey) && t.type === 'expense').forEach(t => catData[t.category] += txDisplayAmount(t));
     const hasData = cats.some(c => catData[c] > 0);
     if (!hasData) {
       if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
@@ -957,9 +1003,9 @@
     const monthTx = data.filter(t => t.date.startsWith(monthKey));
     if (!monthTx.length) { card.style.display = 'none'; return; }
     let catTotals = {}; cats.forEach(c => catTotals[c] = 0);
-    monthTx.filter(t => t.type === 'expense').forEach(t => catTotals[t.category] += t.amount);
+    monthTx.filter(t => t.type === 'expense').forEach(t => catTotals[t.category] += txDisplayAmount(t));
     const topCat = cats.filter(c => catTotals[c] > 0).sort((a,b) => catTotals[b] - catTotals[a])[0];
-    const expenses = monthTx.filter(t => t.type === 'expense').sort((a,b) => b.amount - a.amount);
+    const expenses = monthTx.filter(t => t.type === 'expense').sort((a,b) => txDisplayAmount(b) - txDisplayAmount(a));
     const topTx = expenses[0];
     let catCount = {}; cats.forEach(c => catCount[c] = 0);
     monthTx.filter(t => t.type === 'expense').forEach(t => catCount[t.category]++);
@@ -967,7 +1013,7 @@
     card.style.display = 'block';
     document.getElementById('insightsContainer').innerHTML =
       `<div class="insight-card"><div class="insight-label">Top Category</div><div class="insight-value">${topCat || '—'}</div><div class="insight-detail">${topCat ? fmt(catTotals[topCat]) : ''}</div></div>` +
-      `<div class="insight-card"><div class="insight-label">Biggest Expense</div><div class="insight-value">${topTx ? fmt(topTx.amount) : '—'}</div><div class="insight-detail">${topTx ? topTx.title : ''}</div></div>` +
+      `<div class="insight-card"><div class="insight-label">Biggest Expense</div><div class="insight-value">${topTx ? fmt(txDisplayAmount(topTx)) : '—'}</div><div class="insight-detail">${topTx ? topTx.title : ''}</div></div>` +
       `<div class="insight-card"><div class="insight-label">Most Frequent</div><div class="insight-value">${freqCat || '—'}</div><div class="insight-detail">${freqCat ? catCount[freqCat] + ' txns' : ''}</div></div>`;
   }
 
@@ -1061,8 +1107,8 @@
       const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
       months.push(d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }));
       const txs = data.filter(t => t.date && t.date.startsWith(key));
-      incomes.push(txs.filter(t => t.type==='income').reduce((s,t)=>s+t.amount,0));
-      expenses.push(txs.filter(t => t.type==='expense').reduce((s,t)=>s+t.amount,0));
+      incomes.push(txs.filter(t => t.type==='income').reduce((s,t)=>s+txDisplayAmount(t),0));
+      expenses.push(txs.filter(t => t.type==='expense').reduce((s,t)=>s+txDisplayAmount(t),0));
     }
     const hasData = incomes.some(v=>v>0) || expenses.some(v=>v>0);
     const area = document.getElementById('chartArea');
@@ -1113,7 +1159,7 @@
     const keys = Object.keys(daily);
     const keySet = new Set(keys);
     sorted.forEach(t => {
-      running += t.type === 'income' ? t.amount : -t.amount;
+      running += t.type === 'income' ? txDisplayAmount(t) : -txDisplayAmount(t);
       if (keySet.has(t.date)) daily[t.date] = running;
     });
     let prev = 0;
@@ -1134,13 +1180,17 @@
       const el = document.getElementById('b-' + c);
       if (!el) return;
       const v = parseFloat(el.value);
-      if (v > 0) budgets[c] = v; else delete budgets[c];
+      if (v > 0) {
+        // store in current currency, convert back to base tracking via budgetsCurrency
+        budgets[c] = v;
+      } else delete budgets[c];
     });
-    localStorage.setItem('falcon_budgets', JSON.stringify(budgets));
+    budgetsCurrency = currency;
+    try{ localStorage.setItem('falcon_budgets', JSON.stringify(budgets)); localStorage.setItem('falcon_budgets_currency', budgetsCurrency); }catch{}
     render();
     renderBudgetList();
     sfx('success');
-    toast('Budgets saved!');
+    toast('Budgets saved in ' + currency + '!');
   }
 
   function processRecurring() {
@@ -1155,7 +1205,7 @@
       if (periodKey !== lastPeriodKey) {
         const exists = data.some(x => x.title === t.title && x.amount === t.amount && nowKeyForFreq(new Date(x.date+'T00:00:00'), freq) === periodKey && x.type === t.type);
         if (!exists) {
-          data.push({ id: Date.now() + added, title: t.title, amount: t.amount, date: todayKey, category: t.category, type: t.type, note: 'Auto-generated', recurring: true, recurringFreq: freq });
+          data.push({ id: Date.now() + added, title: t.title, amount: t.amount, date: todayKey, category: t.category, type: t.type, note: 'Auto-generated', recurring: true, recurringFreq: freq, currency: t.currency || currency });
           added++;
         }
       }
@@ -1191,13 +1241,13 @@
     const hasFilter = filterCat !== 'All' || filterDate || searchQ || !isNaN(filterMin) || !isNaN(filterMax);
     document.getElementById('clearFilterBtn').style.display = hasFilter ? 'block' : 'none';
 
-    // Stats on full data
+    // Stats on full data (converted to current currency)
     let totalIncome = 0, totalExpense = 0;
-    data.forEach(t => { if (t.type==='income') totalIncome+=t.amount; else totalExpense+=t.amount; });
+    data.forEach(t => { const v=txDisplayAmount(t); if (t.type==='income') totalIncome+=v; else totalExpense+=v; });
     const balance = totalIncome - totalExpense;
     const todayKey = new Date().toISOString().slice(0,10);
-    const todaySpend = data.filter(t => t.date === todayKey && t.type === 'expense').reduce((s,t) => s + t.amount, 0);
-    const todayIncome = data.filter(t => t.date === todayKey && t.type === 'income').reduce((s,t) => s + t.amount, 0);
+    const todaySpend = data.filter(t => t.date === todayKey && t.type === 'expense').reduce((s,t) => s + txDisplayAmount(t), 0);
+    const todayIncome = data.filter(t => t.date === todayKey && t.type === 'income').reduce((s,t) => s + txDisplayAmount(t), 0);
     document.getElementById('stat-balance').textContent = fmt(balance);
     document.getElementById('stat-income').textContent = fmt(totalIncome);
     document.getElementById('stat-expense').textContent = fmt(totalExpense);
@@ -1214,19 +1264,20 @@
 
     if (rebuildChart) buildChart();
 
-    // Filtered list
-    const filtered = data.filter(t =>
-      (filterCat === 'All' || t.category === filterCat) &&
+    // Filtered list (filterMin/Max compare in current currency)
+    const filtered = data.filter(t =>{
+      const v=txDisplayAmount(t);
+      return (filterCat === 'All' || t.category === filterCat) &&
       (!filterDate || t.date === filterDate) &&
       (!searchQ || t.title.toLowerCase().includes(searchQ) || (t.note||'').toLowerCase().includes(searchQ) || t.category.toLowerCase().includes(searchQ)) &&
-      (isNaN(filterMin) || t.amount >= filterMin) &&
-      (isNaN(filterMax) || t.amount <= filterMax)
-    );
+      (isNaN(filterMin) || v >= filterMin) &&
+      (isNaN(filterMax) || v <= filterMax);
+    });
 
     const sort = document.getElementById('sort').value;
     if (sort === 'oldest') filtered.sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
-    else if (sort === 'highest') filtered.sort((a, b) => b.amount - a.amount);
-    else if (sort === 'lowest') filtered.sort((a, b) => a.amount - b.amount);
+    else if (sort === 'highest') filtered.sort((a, b) => txDisplayAmount(b) - txDisplayAmount(a));
+    else if (sort === 'lowest') filtered.sort((a, b) => txDisplayAmount(a) - txDisplayAmount(b));
     else filtered.sort((a, b) => b.id - a.id);
 
     document.getElementById('txCount').innerHTML = `Showing <strong>${filtered.length}</strong> of ${data.length} transaction${data.length !== 1 ? 's' : ''}`;
@@ -1253,7 +1304,7 @@
           ${t.note ? `<div class="tx-note">${t.note}</div>` : ''}
         </div>
         <div class="tx-right">
-          <div class="tx-amount ${t.type}">${t.type==='income'?'+':'-'}${fmt(t.amount)}</div>
+          <div class="tx-amount ${t.type}">${t.type==='income'?'+':'-'}${fmt(txDisplayAmount(t))}</div>
           <div class="tx-actions">
             <button class="tx-copy" onclick="copyTransaction(${t.id})" title="Copy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
             <button class="tx-edit" onclick="openEditModal(${t.id})" title="Edit"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
@@ -1328,7 +1379,10 @@
           const category = catIdx >= 0 ? (cols[catIdx] || '').trim() : 'Other';
           const type = typeIdx >= 0 ? ((cols[typeIdx] || '').toLowerCase().includes('inc') ? 'income' : 'expense') : 'expense';
           if (!['Food','Travel','Bills','Shopping','Salary','Investment','Other'].includes(category)) { /* keep as-is */ }
-          data.push({ id: Date.now() + count, title, amount, date, category, type, note: '', recurring: false });
+          const curIdx = header.findIndex(h=> h.includes('currenc'));
+          const curVal = curIdx>=0 ? (cols[curIdx]||'').trim().toUpperCase() : '';
+          const txCur = curVal && CURRENCIES[curVal] ? curVal : currency;
+          data.push({ id: Date.now() + count, title, amount, date, category, type, note: '', recurring: false, currency: txCur });
           count++;
         }
         if (!count) throw 'No valid transactions found';
@@ -1356,12 +1410,13 @@
     if (!data.length) return toast('No data to export!', 'error');
     sfx('export');
     let totalIncome = 0, totalExpense = 0;
-    data.forEach(t => { if (t.type==='income') totalIncome+=t.amount; else totalExpense+=t.amount; });
+    data.forEach(t => { const v=txDisplayAmount(t); if (t.type==='income') totalIncome+=v; else totalExpense+=v; });
     const sorted = [...data].sort((a,b) => a.date.localeCompare(b.date));
     const s = curSym();
-    const rows = sorted.map(t =>
-      `<tr><td>${t.date}</td><td>${t.title}</td><td>${t.category}</td><td class="${t.type}">${t.type.toUpperCase()}</td><td class="right ${t.type}">${s}${t.amount.toLocaleString('en-IN')}</td>${t.note ? `<td>${t.note}</td>` : '<td>—</td>'}</tr>`
-    ).join('');
+    const rows = sorted.map(t =>{
+      const v=txDisplayAmount(t);
+      return `<tr><td>${t.date}</td><td>${t.title}</td><td>${t.category}</td><td class="${t.type}">${t.type.toUpperCase()}</td><td class="right ${t.type}">${s}${v.toLocaleString('en-IN')}</td>${t.note ? `<td>${t.note}</td>` : '<td>—</td>'}</tr>`;
+    }).join('');
     const balance = totalIncome - totalExpense;
     const w = window.open('', '_blank');
     w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Falcon Ledger Report</title><style>body{font-family:'Space Mono',monospace;padding:24px;color:#000}h1{font-size:18px;margin-bottom:4px}.name{font-size:11px;color:#333;margin-bottom:2px}.sub{font-size:10px;color:#666;margin-bottom:16px}.summary{font-size:11px;margin-bottom:16px}.summary b{margin-right:20px}.green{color:#00a050}.red{color:#d03030}table{width:100%;border-collapse:collapse;font-size:10px}th{background:#f0f0f0;padding:6px 8px;text-align:left;border:1px solid #ccc;font-size:9px;text-transform:uppercase;letter-spacing:1px}td{padding:5px 8px;border:1px solid #ddd}.right{text-align:right}</style></head><body>
@@ -1395,6 +1450,14 @@
   if (lastSaved) document.getElementById('saveIndicator').textContent = 'Last saved at ' + lastSaved;
   processRecurring();
   render();
+  // fetch live rates (cache 12h)
+  (function(){
+    try{
+      const ts=parseInt(localStorage.getItem('falcon_rates_ts')||'0',10);
+      const age=Date.now()-ts;
+      if(age>12*60*60*1000) fetchRates(); else { ratesFetched=true; const el=document.getElementById('rateInfo'); if(el) el.textContent='Rates cached'; }
+    }catch{ fetchRates(); }
+  })();
 </script>
 <script>if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); }); }</script>
 </body>
