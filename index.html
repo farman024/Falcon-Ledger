@@ -284,8 +284,7 @@
       <h1>FALCON <span>LEDGER</span></h1>
     </div>
     <div class="header-actions">
-      <button class="icon-btn" onclick="openBudgetModal()" title="Budgets"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
-      <button class="icon-btn" onclick="openSettingsModal()" title="Settings"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+      <button class="icon-btn" onclick="openSettingsModal()" title="Settings"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
       <button class="icon-btn" onclick="toggleTheme()" id="themeBtn">
         <svg id="icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
@@ -510,23 +509,11 @@
   </div>
 </div>
 
-<!-- Budget Modal -->
-<div class="modal-overlay" id="budgetModal" onclick="handleOverlayClick(event,'budgetModal')">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title gold"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Budget Limits</div>
-      <button class="modal-close" onclick="closeModal('budgetModal')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    </div>
-    <div id="budgetList"></div>
-    <button class="save-btn" onclick="saveBudgets()">SAVE BUDGETS</button>
-  </div>
-</div>
-
-<!-- Settings Modal -->
+<!-- Settings Modal (merged: Sound + Data + Budget Limits) -->
 <div class="modal-overlay" id="settingsModal" onclick="handleOverlayClick(event,'settingsModal')">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title gold"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/></svg> Settings</div>
+      <div class="modal-title gold"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Settings</div>
       <button class="modal-close" onclick="closeModal('settingsModal')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="settings-section">
@@ -544,6 +531,11 @@
         <button class="settings-btn csv" onclick="exportCSV();closeModal('settingsModal')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> CSV</button>
         <button class="settings-btn" onclick="exportPDF();closeModal('settingsModal')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> PDF</button>
       </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Budget Limits</div>
+      <div id="budgetList"></div>
+      <button class="save-btn" onclick="saveBudgets()" style="margin-top:10px">SAVE BUDGETS</button>
     </div>
   </div>
 </div>
@@ -623,7 +615,21 @@
       default: playTone(700,0.08,'sine',0.09);
     }
   }
-  function openSettingsModal(){ sfx('open'); const sw=document.getElementById('soundSwitch'); if(sw) sw.classList.toggle('on', soundOn()); document.getElementById('settingsModal').classList.add('open'); }
+  function renderBudgetList(){
+    const cats = ['Food','Travel','Bills','Shopping','Salary','Investment','Other'];
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    const spent = {}; cats.forEach(c => spent[c] = 0);
+    data.filter(t => t.date.startsWith(monthKey) && t.type === 'expense').forEach(t => spent[t.category] += t.amount);
+    const el = document.getElementById('budgetList');
+    if (!el) return;
+    el.innerHTML = cats.map(c => {
+      const limit = budgets[c] || '';
+      const over = limit && spent[c] > limit;
+      return `<div class="budget-row"><span class="budget-label">${c}</span><input class="budget-input" id="b-${c}" type="number" min="0" placeholder="0" value="${limit}" onfocus="this.select()"><span class="budget-status${over ? ' over' : ''}">${over ? '⚠ +' + fmt(spent[c]-limit) : spent[c] ? fmt(spent[c]) : '—'}</span></div>`;
+    }).join('');
+  }
+  function openSettingsModal(){ sfx('open'); const sw=document.getElementById('soundSwitch'); if(sw) sw.classList.toggle('on', soundOn()); renderBudgetList(); document.getElementById('settingsModal').classList.add('open'); }
   function toggleSound(){ const now = soundOn() ? 'off' : 'on'; localStorage.setItem('falcon_sound', now==='on' ? 'on' : 'off'); document.getElementById('soundSwitch').classList.toggle('on', now==='on'); sfx('toggle'); if(now==='on') setTimeout(()=>sfx('success'),120); }
 
   const catIcons = {
@@ -1068,30 +1074,18 @@
     svg.innerHTML = `<polyline fill="none" stroke="${color}" stroke-width="1.5" points="${pts}"/><polyline fill="${color}" opacity="0.08" points="${pts} ${w},${h} 0,${h}"/>`;
   }
 
-  function openBudgetModal() { sfx('open');
-    const cats = ['Food','Travel','Bills','Shopping','Salary','Investment','Other'];
-    const now = new Date();
-    const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-    const spent = {};
-    cats.forEach(c => spent[c] = 0);
-    data.filter(t => t.date.startsWith(monthKey) && t.type === 'expense').forEach(t => spent[t.category] += t.amount);
-    document.getElementById('budgetList').innerHTML = cats.map(c => {
-      const limit = budgets[c] || '';
-      const over = limit && spent[c] > limit;
-      return `<div class="budget-row"><span class="budget-label">${c}</span><input class="budget-input" id="b-${c}" type="number" min="0" placeholder="0" value="${limit}" onfocus="this.select()"><span class="budget-status${over ? ' over' : ''}">${over ? '⚠ +' + fmt(spent[c]-limit) : spent[c] ? fmt(spent[c]) : '—'}</span></div>`;
-    }).join('');
-    document.getElementById('budgetModal').classList.add('open');
-  }
-
+  function openBudgetModal() { openSettingsModal(); }
   function saveBudgets() {
     const cats = ['Food','Travel','Bills','Shopping','Salary','Investment','Other'];
     cats.forEach(c => {
-      const v = parseFloat(document.getElementById('b-' + c).value);
+      const el = document.getElementById('b-' + c);
+      if (!el) return;
+      const v = parseFloat(el.value);
       if (v > 0) budgets[c] = v; else delete budgets[c];
     });
     localStorage.setItem('falcon_budgets', JSON.stringify(budgets));
-    closeModal('budgetModal');
     render();
+    renderBudgetList();
     sfx('success');
     toast('Budgets saved!');
   }
