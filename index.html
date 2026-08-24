@@ -542,6 +542,11 @@
       <div id="rateInfo" style="font-size:9px;color:var(--text-dim);margin-top:6px;letter-spacing:0.5px">Fetching rates…</div>
     </div>
     <div class="settings-section">
+      <div class="settings-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-3-2-5-3-6"/><path d="M12 22a7 7 0 0 1-7-7c0-3 2-5 3-6"/><circle cx="12" cy="8" r="2"/></svg> Categories</div>
+      <div style="display:flex;gap:6px;margin-bottom:8px"><input id="catInput" placeholder="e.g. Rent" maxlength="20" style="flex:1" onkeydown="if(event.key==='Enter')addCategory()"><button class="settings-btn" onclick="addCategory()" style="padding:8px 12px;white-space:nowrap">Add</button></div>
+      <div id="catList"></div>
+    </div>
+    <div class="settings-section">
       <div class="settings-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> Data — Import / Export</div>
       <div class="settings-grid">
         <button class="settings-btn" onclick="exportJSON();closeModal('settingsModal')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> JSON</button>
@@ -553,6 +558,7 @@
     <div class="settings-section">
       <div class="settings-label"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Budget Limits</div>
       <div id="budgetList"></div>
+      <div id="budgetSummary" style="font-size:10px;color:var(--text-dim);margin:10px 0 0;padding:8px 10px;background:var(--bg);border:1px solid var(--border);letter-spacing:0.3px;line-height:1.6"></div>
       <button class="save-btn" onclick="saveBudgets()" style="margin-top:10px">SAVE BUDGETS</button>
     </div>
   </div>
@@ -676,6 +682,45 @@
     const el=document.getElementById('rateInfo'); if(el && !ratesFetched) { try{ const ts=localStorage.getItem('falcon_rates_ts'); el.textContent = ts ? 'Rates cached • '+new Date(parseInt(ts)).toLocaleDateString() : 'Rates: tap to refresh'; }catch{ el.textContent=''; } }
   }
 
+  // ── Categories (custom) ──
+  const DEFAULT_CATS = ['Food','Travel','Bills','Shopping','Salary','Investment','Other'];
+  let customCats = (()=>{ try{ const r=JSON.parse(localStorage.getItem('falcon_cats')); return Array.isArray(r)? r.filter(c=>typeof c==='string'&& c.trim() && !DEFAULT_CATS.includes(c.trim())) : []; }catch{return [];} })();
+  function getAllCats(){ return [...DEFAULT_CATS.slice(0,-1), ...customCats, 'Other']; }
+  function saveCats(){ try{ localStorage.setItem('falcon_cats', JSON.stringify(customCats)); }catch{} }
+  function populateCategorySelects(){
+    const cats=getAllCats();
+    const ids=['category','e-category','filter'];
+    ids.forEach(id=>{
+      const el=document.getElementById(id);
+      if(!el) return;
+      const isFilter=id==='filter';
+      const cur=el.value;
+      const opts = (isFilter? ['All',...cats] : cats).map(c=>`<option value="${c}">${c}</option>`).join('');
+      el.innerHTML=opts;
+      if(cur && (isFilter? ['All',...cats]:cats).includes(cur)) el.value=cur;
+    });
+  }
+  function renderCatList(){
+    const el=document.getElementById('catList'); if(!el) return;
+    if(!customCats.length){ el.innerHTML='<div style="font-size:10px;color:var(--text-dim);padding:6px 0">No custom categories yet</div>'; return; }
+    el.innerHTML=customCats.map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px"><span style="font-size:11px;color:var(--text-bright)">${c}</span><button onclick="deleteCategory('${c.replace(/'/g,"\\'")}')" style="background:none;border:1px solid var(--border);color:var(--text-dim);width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button></div>`).join('');
+  }
+  function addCategory(){
+    const inp=document.getElementById('catInput'); if(!inp) return;
+    const raw=inp.value.trim(); if(!raw) return toast('Enter category name','error');
+    const name=raw.charAt(0).toUpperCase()+raw.slice(1);
+    if(name.length>20) return toast('Max 20 chars','error');
+    if(getAllCats().some(c=>c.toLowerCase()===name.toLowerCase())) return toast('Category exists','error');
+    customCats.push(name); saveCats(); populateCategorySelects(); renderCatList(); renderBudgetList(); render();
+    inp.value=''; sfx('success'); toast('Category added: '+name);
+  }
+  function deleteCategory(name){
+    customCats=customCats.filter(c=>c!==name);
+    if(budgets[name]){ delete budgets[name]; try{ localStorage.setItem('falcon_budgets', JSON.stringify(budgets)); }catch{} }
+    saveCats(); populateCategorySelects(); renderCatList(); renderBudgetList(); render();
+    sfx('delete'); toast('Category removed','error');
+  }
+
   // ── Sound engine (Web Audio, like Global War Room) ──
   let _audioCtx = null;
   function soundOn() { return localStorage.getItem('falcon_sound') !== 'off'; }
@@ -712,11 +757,11 @@
     }
   }
   function renderBudgetList(){
-    const cats = ['Food','Travel','Bills','Shopping','Salary','Investment','Other'];
+    const cats = getAllCats();
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
     const spent = {}; cats.forEach(c => spent[c] = 0);
-    data.filter(t => t.date.startsWith(monthKey) && t.type === 'expense').forEach(t => spent[t.category] += txDisplayAmount(t));
+    data.filter(t => t.date.startsWith(monthKey) && t.type === 'expense').forEach(t => { if(spent[t.category]!==undefined) spent[t.category] += txDisplayAmount(t); else spent[t.category]=(spent[t.category]||0)+txDisplayAmount(t); });
     const el = document.getElementById('budgetList');
     if (!el) return;
     el.innerHTML = cats.map(c => {
@@ -726,8 +771,26 @@
       const over = limit && spentVal > limit;
       return `<div class="budget-row"><span class="budget-label">${c}</span><input class="budget-input" id="b-${c}" type="number" min="0" placeholder="0" value="${limit}" onfocus="this.select()"><span class="budget-status${over ? ' over' : ''}">${over ? '⚠ +' + fmt(spentVal-limit) : spentVal ? fmt(spentVal) : '—'}</span></div>`;
     }).join('');
+    updateBudgetSummary();
   }
-  function openSettingsModal(){ sfx('open'); const sw=document.getElementById('soundSwitch'); if(sw) sw.classList.toggle('on', soundOn()); const cs=document.getElementById('currencySelect'); if(cs) cs.value=currency; renderBudgetList(); document.getElementById('settingsModal').classList.add('open'); }
+  function updateBudgetSummary(){
+    const cats=getAllCats();
+    const now=new Date();
+    const monthKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    let totalBudget=0, totalSpent=0;
+    cats.forEach(c=>{ const raw=budgets[c]; if(raw) totalBudget+=budgetDisplayLimit(raw); });
+    data.filter(t=>t.date.startsWith(monthKey)&&t.type==='expense').forEach(t=> totalSpent+=txDisplayAmount(t));
+    const left=totalBudget-totalSpent;
+    const daysInMonth=new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    const leftDays=Math.max(1, daysInMonth - now.getDate() + 1);
+    const perDay = totalBudget ? (left/leftDays) : 0;
+    const el=document.getElementById('budgetSummary'); if(!el) return;
+    if(!totalBudget){ el.innerHTML='No budget set — add limits above'; el.style.display='block'; return; }
+    const over = left < 0;
+    el.innerHTML = `Budget: <b style="color:var(--text-bright)">${fmt(totalBudget)}/mo</b> • Spent <b style="color:var(--red)">${fmt(totalSpent)}</b> • <span style="color:${over?'var(--red)':'var(--green)'}">${over? 'Over ':'Left '}${fmt(Math.abs(left))}</span> • <span style="color:var(--accent)">${fmt(Math.max(0,perDay))}/day</span> <span style="opacity:0.6">(${leftDays}d left)</span>`;
+    el.style.display='block';
+  }
+  function openSettingsModal(){ sfx('open'); const sw=document.getElementById('soundSwitch'); if(sw) sw.classList.toggle('on', soundOn()); const cs=document.getElementById('currencySelect'); if(cs) cs.value=currency; populateCategorySelects(); renderCatList(); renderBudgetList(); document.getElementById('settingsModal').classList.add('open'); }
   function toggleSound(){ const now = soundOn() ? 'off' : 'on'; localStorage.setItem('falcon_sound', now==='on' ? 'on' : 'off'); document.getElementById('soundSwitch').classList.toggle('on', now==='on'); sfx('toggle'); if(now==='on') setTimeout(()=>sfx('success'),120); }
 
   const catIcons = {
@@ -932,7 +995,7 @@
 
   function buildPieChart() {
     const area = document.getElementById('chartArea');
-    const cats = ['Food','Travel','Bills','Shopping','Salary','Investment','Other'];
+    const cats = getAllCats();
     const catData = {};
     cats.forEach(c => catData[c] = 0);
     const now = new Date();
@@ -995,7 +1058,7 @@
   }
 
   function renderInsights() {
-    const cats = ['Food','Travel','Bills','Shopping','Salary','Investment','Other'];
+    const cats = getAllCats();
     const card = document.getElementById('insightsCard');
     if (!data.length) { card.style.display = 'none'; return; }
     const now = new Date();
@@ -1175,7 +1238,7 @@
 
   function openBudgetModal() { openSettingsModal(); }
   function saveBudgets() {
-    const cats = ['Food','Travel','Bills','Shopping','Salary','Investment','Other'];
+    const cats = getAllCats();
     cats.forEach(c => {
       const el = document.getElementById('b-' + c);
       if (!el) return;
@@ -1315,14 +1378,22 @@
     });
   }
 
+  function applyTheme(light){
+    document.documentElement.classList.toggle('light-mode', !!light);
+    const isLight = document.documentElement.classList.contains('light-mode');
+    const sun=document.getElementById('icon-sun'), moon=document.getElementById('icon-moon');
+    if(sun) sun.style.display = isLight ? 'none' : 'block';
+    if(moon) moon.style.display = isLight ? 'block' : 'none';
+  }
   function toggleTheme() {
     sfx('toggle');
-    document.documentElement.classList.toggle('light-mode');
-    const isLight = document.documentElement.classList.contains('light-mode');
-    document.getElementById('icon-sun').style.display = isLight ? 'none' : 'block';
-    document.getElementById('icon-moon').style.display = isLight ? 'block' : 'none';
+    const nowLight = !document.documentElement.classList.contains('light-mode');
+    applyTheme(nowLight);
+    try{ localStorage.setItem('falcon_theme', nowLight ? 'light' : 'dark'); }catch{}
     render();
   }
+  // init theme
+  (function(){ try{ if(localStorage.getItem('falcon_theme')==='light') applyTheme(true); }catch{} })();
 
   function exportJSON() {
     if (!data.length) return toast('No data to export!', 'error');
@@ -1345,6 +1416,9 @@
       try {
         const imported = JSON.parse(ev.target.result);
         if (!Array.isArray(imported)) throw 'invalid';
+        // collect custom categories from import
+        imported.forEach(t=>{ if(t.category && !DEFAULT_CATS.includes(t.category) && !customCats.includes(t.category)){ customCats.push(t.category); }});
+        if(imported.some(t=> t.category && !DEFAULT_CATS.includes(t.category))){ saveCats(); populateCategorySelects(); renderCatList(); }
         data = imported;
         save(); render();
         toast(imported.length + ' transactions imported!');
@@ -1378,7 +1452,7 @@
           if (!title || isNaN(amount) || amount <= 0 || !date) continue;
           const category = catIdx >= 0 ? (cols[catIdx] || '').trim() : 'Other';
           const type = typeIdx >= 0 ? ((cols[typeIdx] || '').toLowerCase().includes('inc') ? 'income' : 'expense') : 'expense';
-          if (!['Food','Travel','Bills','Shopping','Salary','Investment','Other'].includes(category)) { /* keep as-is */ }
+          if (!getAllCats().includes(category) && category) { if(!customCats.includes(category) && !DEFAULT_CATS.includes(category)){ customCats.push(category); saveCats(); } }
           const curIdx = header.findIndex(h=> h.includes('currenc'));
           const curVal = curIdx>=0 ? (cols[curIdx]||'').trim().toUpperCase() : '';
           const txCur = curVal && CURRENCIES[curVal] ? curVal : currency;
@@ -1386,6 +1460,7 @@
           count++;
         }
         if (!count) throw 'No valid transactions found';
+        populateCategorySelects(); renderCatList();
         save(); render();
         toast(count + ' transactions imported from CSV!');
       } catch (msg) { toast('CSV import failed: ' + (msg || 'unknown'), 'error'); }
@@ -1446,6 +1521,7 @@
   });
 
   renderProfile();
+  populateCategorySelects();
   updateCurrencyUI();
   if (lastSaved) document.getElementById('saveIndicator').textContent = 'Last saved at ' + lastSaved;
   processRecurring();
