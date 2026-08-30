@@ -695,7 +695,7 @@
       if(!el) return;
       const isFilter=id==='filter';
       const cur=el.value;
-      const opts = (isFilter? ['All',...cats] : cats).map(c=>`<option value="${c}">${c}</option>`).join('');
+      const opts = (isFilter? ['All',...cats] : cats).map(c=>`<option value="${escHtml(c)}">${escHtml(c)}</option>`).join('');
       el.innerHTML=opts;
       if(cur && (isFilter? ['All',...cats]:cats).includes(cur)) el.value=cur;
     });
@@ -703,7 +703,7 @@
   function renderCatList(){
     const el=document.getElementById('catList'); if(!el) return;
     if(!customCats.length){ el.innerHTML='<div style="font-size:10px;color:var(--text-dim);padding:6px 0">No custom categories yet</div>'; return; }
-    el.innerHTML=customCats.map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px"><span style="font-size:11px;color:var(--text-bright)">${c}</span><button onclick="deleteCategory('${c.replace(/'/g,"\\'")}')" style="background:none;border:1px solid var(--border);color:var(--text-dim);width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button></div>`).join('');
+    el.innerHTML=customCats.map(c=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg);border:1px solid var(--border);margin-bottom:6px"><span style="font-size:11px;color:var(--text-bright)">${escHtml(c)}</span><button onclick="deleteCategory('${c.replace(/'/g,"\\'")}')" style="background:none;border:1px solid var(--border);color:var(--text-dim);width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button></div>`).join('');
   }
   function addCategory(){
     const inp=document.getElementById('catInput'); if(!inp) return;
@@ -849,6 +849,7 @@
     setTimeout(() => el.classList.remove('show'), 2500);
   }
 
+  function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function fmt(n) {
     const s = curSym();
     if (typeof n !== 'number' || isNaN(n)) return s.trim() + '0';
@@ -1075,9 +1076,9 @@
     const freqCat = cats.filter(c => catCount[c] > 0).sort((a,b) => catCount[b] - catCount[a])[0];
     card.style.display = 'block';
     document.getElementById('insightsContainer').innerHTML =
-      `<div class="insight-card"><div class="insight-label">Top Category</div><div class="insight-value">${topCat || '—'}</div><div class="insight-detail">${topCat ? fmt(catTotals[topCat]) : ''}</div></div>` +
-      `<div class="insight-card"><div class="insight-label">Biggest Expense</div><div class="insight-value">${topTx ? fmt(txDisplayAmount(topTx)) : '—'}</div><div class="insight-detail">${topTx ? topTx.title : ''}</div></div>` +
-      `<div class="insight-card"><div class="insight-label">Most Frequent</div><div class="insight-value">${freqCat || '—'}</div><div class="insight-detail">${freqCat ? catCount[freqCat] + ' txns' : ''}</div></div>`;
+      `<div class="insight-card"><div class="insight-label">Top Category</div><div class="insight-value">${escHtml(topCat || '—')}</div><div class="insight-detail">${topCat ? fmt(catTotals[topCat]) : ''}</div></div>` +
+      `<div class="insight-card"><div class="insight-label">Biggest Expense</div><div class="insight-value">${topTx ? fmt(txDisplayAmount(topTx)) : '—'}</div><div class="insight-detail">${topTx ? escHtml(topTx.title) : ''}</div></div>` +
+      `<div class="insight-card"><div class="insight-label">Most Frequent</div><div class="insight-value">${escHtml(freqCat || '—')}</div><div class="insight-detail">${freqCat ? catCount[freqCat] + ' txns' : ''}</div></div>`;
   }
 
   function renderProfile() {
@@ -1360,11 +1361,11 @@
         <div class="tx-icon ${t.type}">${icon}</div>
         <div class="tx-info">
           <div class="tx-title-row">
-            <div class="tx-title">${t.title}</div>
+            <div class="tx-title">${escHtml(t.title)}</div>
             ${t.recurring ? '<span class="recurring-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> ' + (t.recurringFreq ? t.recurringFreq.charAt(0).toUpperCase() + t.recurringFreq.slice(1) : 'Monthly') + '</span>' : ''}
           </div>
-          <div class="tx-meta">${t.category} • ${dateStr}</div>
-          ${t.note ? `<div class="tx-note">${t.note}</div>` : ''}
+          <div class="tx-meta">${escHtml(t.category)} • ${dateStr}</div>
+          ${t.note ? `<div class="tx-note">${escHtml(t.note)}</div>` : ''}
         </div>
         <div class="tx-right">
           <div class="tx-amount ${t.type}">${t.type==='income'?'+':'-'}${fmt(txDisplayAmount(t))}</div>
@@ -1490,13 +1491,13 @@
     const s = curSym();
     const rows = sorted.map(t =>{
       const v=txDisplayAmount(t);
-      return `<tr><td>${t.date}</td><td>${t.title}</td><td>${t.category}</td><td class="${t.type}">${t.type.toUpperCase()}</td><td class="right ${t.type}">${s}${v.toLocaleString('en-IN')}</td>${t.note ? `<td>${t.note}</td>` : '<td>—</td>'}</tr>`;
+      return `<tr><td>${t.date}</td><td>${escHtml(t.title)}</td><td>${escHtml(t.category)}</td><td class="${t.type}">${t.type.toUpperCase()}</td><td class="right ${t.type}">${s}${v.toLocaleString('en-IN')}</td>${t.note ? `<td>${escHtml(t.note)}</td>` : '<td>—</td>'}</tr>`;
     }).join('');
     const balance = totalIncome - totalExpense;
     const w = window.open('', '_blank');
     w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Falcon Ledger Report</title><style>body{font-family:'Space Mono',monospace;padding:24px;color:#000}h1{font-size:18px;margin-bottom:4px}.name{font-size:11px;color:#333;margin-bottom:2px}.sub{font-size:10px;color:#666;margin-bottom:16px}.summary{font-size:11px;margin-bottom:16px}.summary b{margin-right:20px}.green{color:#00a050}.red{color:#d03030}table{width:100%;border-collapse:collapse;font-size:10px}th{background:#f0f0f0;padding:6px 8px;text-align:left;border:1px solid #ccc;font-size:9px;text-transform:uppercase;letter-spacing:1px}td{padding:5px 8px;border:1px solid #ddd}.right{text-align:right}</style></head><body>
       <h1>FALCON LEDGER</h1>
-      ${profile.name ? `<div class="name">${profile.name}</div>` : ''}
+      ${profile.name ? `<div class="name">${escHtml(profile.name)}</div>` : ''}
       <div class="sub">Generated ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} &middot; ${data.length} transactions &middot; ${currency}</div>
       <div class="summary"><b>Balance: <span class="${balance >= 0 ? 'green' : 'red'}">${s}${balance.toLocaleString('en-IN')}</span></b><b>Income: <span class="green">${s}${totalIncome.toLocaleString('en-IN')}</span></b><b>Expense: <span class="red">${s}${totalExpense.toLocaleString('en-IN')}</span></b></div>
       <table><thead><tr><th>Date</th><th>Title</th><th>Category</th><th>Type</th><th class="right">Amount (${currency})</th><th>Note</th></tr></thead><tbody>${rows}</tbody></table>
